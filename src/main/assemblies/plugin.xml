@@ -14,13 +14,13 @@
         <exclude>org.elasticsearch:elasticsearch</exclude>
       </excludes>
     </dependencySet>
-    <dependencySet>
-      <outputDirectory>/</outputDirectory>
-      <useProjectArtifact>true</useProjectArtifact>
-      <useTransitiveFiltering>true</useTransitiveFiltering>
-      <includes>
-        <include>org.apache.lucene:lucene-korean</include>
-      </includes>
-    </dependencySet>
+    <!--<dependencySet>-->
+    <!--  <outputDirectory>/</outputDirectory>-->
+    <!--  <useProjectArtifact>true</useProjectArtifact>-->
+    <!--  <useTransitiveFiltering>true</useTransitiveFiltering>-->
+    <!--  <includes>-->
+    <!--    <include>org.apache.lucene:lucene-korean</include>-->
+    <!--  </includes>-->
+    <!--</dependencySet>-->
   </dependencySets>
 </assembly>

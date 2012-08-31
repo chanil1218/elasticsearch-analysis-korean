@@ -2,7 +2,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <name>elasticsearch-analysis-smartcn</name>
+  <name>elasticsearch-analysis-kr</name>
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.elasticsearch</groupId>
   <artifactId>elasticsearch-analysis-korean</artifactId>
@@ -19,8 +19,7 @@
   </licenses>
   <scm>
     <connection>scm:git:git@github.com:chanil121/elasticsearch-analysis-korean.git</connection>
-    <developerConnection>scm:git:git@github.com:chanil1218/elasticsearch-analysis-korean.git
-    </developerConnection>
+    <developerConnection>scm:git:git@github.com:chanil1218/elasticsearch-analysis-korean.git</developerConnection>
     <url>http://github.com/elasticsearch/elasticsearch-analysis-korean</url>
   </scm>
 
@@ -32,6 +31,7 @@
 
   <properties>
     <elasticsearch.version>0.19.3</elasticsearch.version>
+    <lucene.version>3.5.0</lucene.version>
   </properties>
 
   <repositories>
@@ -44,14 +44,23 @@
       <version>${elasticsearch.version}</version>
       <scope>compile</scope>
     </dependency>
-
     <dependency>
       <groupId>org.apache.lucene</groupId>
-      <artifactId>lucene-korean</artifactId>
-      <version>1.0.0</version>
+      <artifactId>lucene-core</artifactId>
+      <version>${lucene.version}</version>
       <scope>compile</scope>
     </dependency>
-
+    <!--<dependency>-->
+      <!--  <groupId>org.apache.lucene</groupId>-->
+      <!--  <artifactId>lucene-korean</artifactId>-->
+      <!--  <version>1.0.0</version>-->
+      <!--  <scope>compile</scope>-->
+      <!--</dependency>-->
+    <dependency>
+      <groupId>de.jflex</groupId>
+      <artifactId>maven-jflex-plugin</artifactId>
+      <version>1.4.3-r1</version>
+    </dependency>
     <dependency>
       <groupId>log4j</groupId>
       <artifactId>log4j</artifactId>
@@ -70,6 +79,24 @@
           <source>1.6</source>
           <target>1.6</target>
         </configuration>
+      </plugin>
+      <plugin>
+        <groupId>de.jflex</groupId>
+        <artifactId>maven-jflex-plugin</artifactId>
+        <version>1.4.3-r1</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>src/main/java</outputDirectory>
+              <lexDefinitions>
+                <lexDefinition>src/main/jflex</lexDefinition>
+              </lexDefinitions>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
