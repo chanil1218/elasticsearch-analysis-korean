@@ -47,6 +47,8 @@ public class KoreanEnv {
 	public static final String FILE_CJ = "cj.dic";
 	
 	public static final String FILE_KOREAN_PROPERTY = "org/apache/lucene/analysis/kr/korean.properties";
+
+        public static final String ENCODING = "Encoding";
 	
 	private Properties defaults = null;
 
@@ -84,7 +86,7 @@ public class KoreanEnv {
 		
 		defaults.setProperty(FILE_SYLLABLE_FEATURE,"org/apache/lucene/analysis/kr/dic/syllable.dic");
 		defaults.setProperty(FILE_DICTIONARY,"org/apache/lucene/analysis/kr/dic/dictionary.dic");
-		defaults.setProperty(FILE_DICTIONARY,"org/apache/lucene/analysis/kr/dic/extension.dic");		
+		defaults.setProperty(FILE_EXTENSION,"org/apache/lucene/analysis/kr/dic/extension.dic");		
 		defaults.setProperty(FILE_JOSA,"org/apache/lucene/analysis/kr/dic/josa.dic");	
 		defaults.setProperty(FILE_EOMI,"org/apache/lucene/analysis/kr/dic/eomi.dic");	
 		defaults.setProperty(FILE_PREFIX,"org/apache/lucene/analysis/kr/dic/prefix.dic");		
@@ -92,6 +94,8 @@ public class KoreanEnv {
 		defaults.setProperty(FILE_COMPOUNDS,"org/apache/lucene/analysis/kr/dic/compounds.dic");	
 		defaults.setProperty(FILE_UNCOMPOUNDS,"org/apache/lucene/analysis/kr/dic/uncompounds.dic");
 		defaults.setProperty(FILE_CJ,"org/apache/lucene/analysis/kr/dic/cj.dic");
+
+                defaults.setProperty(ENCODING, "UTF-8");
 	 }
 
 	
@@ -121,7 +125,7 @@ public class KoreanEnv {
 			byte[] in = FileUtil.readByteFromCurrentJar(FILE_KOREAN_PROPERTY);
 			properties.load(new ByteArrayInputStream(in));
 		} catch (Exception e) {
-			throw new MorphException("Failure while trying to load properties file " + file.getPath(), e);
+			throw new MorphException("Failure while trying to load properties file " + FILE_KOREAN_PROPERTY, e);
 		}
 		return properties;
 	}
