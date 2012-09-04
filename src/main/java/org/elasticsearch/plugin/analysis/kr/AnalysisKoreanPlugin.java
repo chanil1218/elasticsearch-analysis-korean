@@ -8,7 +8,7 @@ public class AnalysisKoreanPlugin extends AbstractPlugin {
 
     @Override
     public String name() {
-            return "analysis-korean";
+            return "analysis-kr";
         }   
 
     @Override
