@@ -35,15 +35,18 @@ public class VerbUtil {
 	
 	static {
 		String[] suffixs = {
-				  "이","하","되","내", "나", "스럽","시키","있","없","같","당하","만하","드리","받","짓"};
+				"\uC774","\uD558","\uB418","\uB0B4", "\uB098", "\uC2A4\uB7FD",
+				"\uC2DC\uD0A4","\uC788","\uC5C6","\uAC19","\uB2F9\uD558","\uB9CC\uD558",
+				"\uB4DC\uB9AC","\uBC1B","\uC9D3"};
+		
 		for(int i=0;i<suffixs.length;i++) verbSuffix.put(suffixs[i], suffixs[i]);
 		
-		String[] xverbs = {"오","내","주","보","지","오르","올리"};
+		String[] xverbs = {"\uC624","\uB0B4","\uC8FC","\uBCF4","\uC9C0","\uC624\uB974","\uC62C\uB9AC"};
 		for(int i=0;i<xverbs.length;i++) XVerb.put(xverbs[i], xverbs[i]);
 	}
 	
 	/**
-	 * 어간이 용언화접미사로 끝나면 index 를 반환한다.  아니면 -1을 반환한다.
+	 * if the stem ends with verb suffix, return the index, if not return -1.
 	 * @param result
 	 * @return
 	 */

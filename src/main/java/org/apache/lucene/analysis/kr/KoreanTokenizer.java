@@ -19,193 +19,150 @@ package org.apache.lucene.analysis.kr;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
 
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.kr.morph.AnalysisOutput;
-import org.apache.lucene.analysis.kr.morph.CompoundEntry;
-import org.apache.lucene.analysis.kr.morph.MorphAnalyzer;
-import org.apache.lucene.analysis.kr.morph.MorphException;
-import org.apache.lucene.analysis.kr.morph.PatternConstants;
-import org.apache.lucene.analysis.kr.morph.WordSpaceAnalyzer;
-import org.apache.lucene.analysis.kr.utils.DictionaryUtil;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.Version;
 
 public class KoreanTokenizer extends Tokenizer {
-	
-	  /** A private instance of the JFlex-constructed scanner */
-	  private final KoreanTokenizerImpl scanner;
 
-	  public static final int ALPHANUM          = 0;
-	  public static final int APOSTROPHE        = 1;
-	  public static final int ACRONYM           = 2;
-	  public static final int COMPANY           = 3;
-	  public static final int EMAIL             = 4;
-	  public static final int HOST              = 5;
-	  public static final int NUM               = 6;
-	  public static final int CJ                = 7;
-	  public static final int ACRONYM_DEP			= 8;
-	  public static final int KOREAN			= 9;
-	  public static final int CHINESE			= 10;
-	  
+	/** A private instance of the JFlex-constructed scanner */
+	private final KoreanTokenizerImpl scanner;
 
-	  /** String token types that correspond to token type int constants */
-	  public static final String [] TOKEN_TYPES = new String [] {
-	    "<ALPHANUM>",
-	    "<APOSTROPHE>",
-	    "<ACRONYM>",
-	    "<COMPANY>",
-	    "<EMAIL>",
-	    "<HOST>",
-	    "<NUM>",
-	    "<CJ>",
-	    "<ACRONYM_DEP>",	    
-	    "<KOREAN>",
-	    "<CHINESE>"
-	  };
-	  
-	  private boolean replaceInvalidAcronym;
-	    
-	  private int maxTokenLength = StandardAnalyzer.DEFAULT_MAX_TOKEN_LENGTH;
+	public static final int ALPHANUM = 0;
+	public static final int APOSTROPHE = 1;
+	public static final int ACRONYM = 2;
+	public static final int COMPANY = 3;
+	public static final int EMAIL = 4;
+	public static final int HOST = 5;
+	public static final int NUM = 6;
+	public static final int CJ = 7;
+	public static final int ACRONYM_DEP = 8;
+	public static final int KOREAN = 9;
+	public static final int CHINESE = 10;
 
-	  /** Set the max allowed token length.  Any token longer
-	   *  than this is skipped. */
-	  public void setMaxTokenLength(int length) {
-	    this.maxTokenLength = length;
-	  }
+	/** String token types that correspond to token type int constants */
+	public static final String[] TOKEN_TYPES = new String[] { "<ALPHANUM>",
+			"<APOSTROPHE>", "<ACRONYM>", "<COMPANY>", "<EMAIL>", "<HOST>",
+			"<NUM>", "<CJ>", "<ACRONYM_DEP>", "<KOREAN>", "<CHINESE>" };
 
-	  /** @see #setMaxTokenLength */
-	  public int getMaxTokenLength() {
-	    return maxTokenLength;
-	  }
+	private boolean replaceInvalidAcronym;
 
-	  /**
-	   * Creates a new instance of the {@link org.apache.lucene.analysis.standard.StandardTokenizer}.  Attaches
-	   * the <code>input</code> to the newly created JFlex scanner.
-	   *
-	   * @param input The input reader
-	   *
-	   * See http://issues.apache.org/jira/browse/LUCENE-1068
-	   */
-	  public KoreanTokenizer(Version matchVersion, Reader input) {
-	    super();
-	    this.scanner = new KoreanTokenizerImpl(input);
-	    init(input, matchVersion);
-	  }
+	private int maxTokenLength = StandardAnalyzer.DEFAULT_MAX_TOKEN_LENGTH;
 
-	  /**
-	   * Creates a new StandardTokenizer with a given {@link AttributeSource}. 
-	   */
-	  public KoreanTokenizer(Version matchVersion, AttributeSource source, Reader input) {
-	    super(source);
-	    this.scanner = new KoreanTokenizerImpl(input);
-	    init(input, matchVersion);
-	  }
+	/**
+	 * Set the max allowed token length. Any token longer than this is skipped.
+	 */
+	public void setMaxTokenLength(int length) {
+		this.maxTokenLength = length;
+	}
 
-	  /**
-	   * Creates a new StandardTokenizer with a given {@link org.apache.lucene.util.AttributeSource.AttributeFactory} 
-	   */
-	  public KoreanTokenizer(Version matchVersion, AttributeFactory factory, Reader input) {
-	    super(factory);
-	    this.scanner = new KoreanTokenizerImpl(input);
-	    init(input, matchVersion);
-	  }
+	/** @see #setMaxTokenLength */
+	public int getMaxTokenLength() {
+		return maxTokenLength;
+	}
 
-	  private final void init(Reader input, Version matchVersion) {
-	    if (matchVersion.onOrAfter(Version.LUCENE_24)) {
-	      replaceInvalidAcronym = true;
-	    } else {
-	      replaceInvalidAcronym = false;
-	    }
-	    this.input = input;    
-	  }
+	/**
+	 * Creates a new instance of the
+	 * {@link org.apache.lucene.analysis.standard.StandardTokenizer}. Attaches
+	 * the <code>input</code> to the newly created JFlex scanner.
+	 * 
+	 * @param input
+	 *            The input reader
+	 * 
+	 *            See http://issues.apache.org/jira/browse/LUCENE-1068
+	 */
+	public KoreanTokenizer(Version matchVersion, Reader input) {
+		super(input);
+		this.scanner = new KoreanTokenizerImpl(input);
+		init(input, matchVersion);
+	}
 
-	  // this tokenizer generates three attributes:
-	  // term offset, positionIncrement and type
-	  private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
-	  private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
-	  private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
-	  private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
+	/**
+	 * Creates a new StandardTokenizer with a given {@link AttributeSource}.
+	 */
+	public KoreanTokenizer(Version matchVersion, AttributeSource source,
+			Reader input) {
+		super(source.getAttributeFactory(), input);
+		this.scanner = new KoreanTokenizerImpl(input);
+		init(input, matchVersion);
+	}
 
-	  /*
-	   * (non-Javadoc)
-	   *
-	   * @see org.apache.lucene.analysis.TokenStream#next()
-	   */
-	  @Override
-	  public final boolean incrementToken() throws IOException {
-	    clearAttributes();
-	    int posIncr = 1;
+	/**
+	 * Creates a new StandardTokenizer with a given
+	 * {@link org.apache.lucene.util.AttributeSource.AttributeFactory}
+	 */
+	public KoreanTokenizer(Version matchVersion, AttributeFactory factory,
+			Reader input) {
+		super(factory, input);
+		this.scanner = new KoreanTokenizerImpl(input);
+		init(input, matchVersion);
+	}
 
-	    while(true) {
-	      int tokenType = scanner.getNextToken();
+	private final void init(Reader input, Version matchVersion) {
+		if (matchVersion.onOrAfter(Version.LUCENE_30)) {
+			replaceInvalidAcronym = true;
+		} else {
+			replaceInvalidAcronym = false;
+		}
+		this.input = input;
+	}
 
-	      if (tokenType == KoreanTokenizerImpl.YYEOF) {
-	        return false;
-	      }
-	    
-	      if (scanner.yylength() <= maxTokenLength) {
-	        posIncrAtt.setPositionIncrement(posIncr);
-	        scanner.getText(termAtt);	        
-	        final int start = scanner.yychar();
-	        offsetAtt.setOffset(correctOffset(start), correctOffset(start+termAtt.length())); 
-	        typeAtt.setType(KoreanTokenizer.TOKEN_TYPES[tokenType]);
-	        
-	        return true;
-	      } else
-	        // When we skip a too-long term, we still increment the
-	        // position increment
-	        posIncr++;
-	    }
-	  }
-	  
-	  @Override
-	  public final void end() {
-	    // set final offset
-	    int finalOffset = correctOffset(scanner.yychar() + scanner.yylength());
-	    offsetAtt.setOffset(finalOffset, finalOffset);
-	  }
+	// this tokenizer generates three attributes:
+	// term offset, positionIncrement and type
+	private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+	private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
+	private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
+	private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
 
-	  @Override
-	  public void reset(Reader reader) throws IOException {
-	    super.reset(reader);
-	    scanner.yyreset(reader);
-	  }
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see org.apache.lucene.analysis.TokenStream#next()
+	 */
+	@Override
+	public final boolean incrementToken() throws IOException {
+		clearAttributes();
+		int posIncr = 1;
 
-	  /**
-	   * Prior to https://issues.apache.org/jira/browse/LUCENE-1068, StandardTokenizer mischaracterized as acronyms tokens like www.abc.com
-	   * when they should have been labeled as hosts instead.
-	   * @return true if StandardTokenizer now returns these tokens as Hosts, otherwise false
-	   *
-	   * @deprecated Remove in 3.X and make true the only valid value
-	   */
-	  @Deprecated
-	  public boolean isReplaceInvalidAcronym() {
-	    return replaceInvalidAcronym;
-	  }
+		while (true) {
+			int tokenType = scanner.getNextToken();
 
-	  /**
-	   *
-	   * @param replaceInvalidAcronym Set to true to replace mischaracterized acronyms as HOST.
-	   * @deprecated Remove in 3.X and make true the only valid value
-	   *
-	   * See https://issues.apache.org/jira/browse/LUCENE-1068
-	   */
-	  @Deprecated
-	  public void setReplaceInvalidAcronym(boolean replaceInvalidAcronym) {
-	    this.replaceInvalidAcronym = replaceInvalidAcronym;
-	  }
-	  
+			if (tokenType == KoreanTokenizerImpl.YYEOF) {
+				return false;
+			}
+
+			if (scanner.yylength() <= maxTokenLength) {
+				posIncrAtt.setPositionIncrement(posIncr);
+				scanner.getText(termAtt);
+				final int start = scanner.yychar();
+				offsetAtt.setOffset(correctOffset(start), correctOffset(start
+						+ termAtt.length()));
+				typeAtt.setType(KoreanTokenizer.TOKEN_TYPES[tokenType]);
+
+				return true;
+			} else
+				// When we skip a too-long term, we still increment the
+				// position increment
+				posIncr++;
+		}
+	}
+
+	@Override
+	public final void end() {
+		// set final offset
+		int finalOffset = correctOffset(scanner.yychar() + scanner.yylength());
+		offsetAtt.setOffset(finalOffset, finalOffset);
+	}
+
+	@Override
+	public void reset() throws IOException {
+		scanner.yyreset(input);
+	}
+
 }
