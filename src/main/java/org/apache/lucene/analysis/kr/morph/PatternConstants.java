@@ -1,10 +1,6 @@
-package org.apache.lucene.analysis.kr.morph;
-
-import java.util.HashMap;
-import java.util.Map;
-
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
+
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
  * The ASF licenses this file to You under the Apache License, Version 2.0
@@ -19,6 +15,10 @@ import java.util.Map;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.analysis.kr.morph;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public interface PatternConstants {
 

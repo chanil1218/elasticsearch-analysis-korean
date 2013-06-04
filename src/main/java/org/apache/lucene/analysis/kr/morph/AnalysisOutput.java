@@ -45,7 +45,7 @@ public class AnalysisOutput implements Cloneable {
 	private char dinf; // pos info. in Han-dic
 	private String nsfx; // index of noun suffix
 	private String josa; // josa string
-	private List<String> jlist = new ArrayList<String>(); // unit-josa sequnce
+	private List<String> jlist = new ArrayList<String>(); // unit-josa sequence
 	private String eomi;  // Eomi string
 	private List<String> elist = new ArrayList<String>(); // unit-Eomi sequence
 	private String pomi; // prefinal Eomi
