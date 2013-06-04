@@ -19,6 +19,15 @@ package org.apache.lucene.analysis.kr;
  */
 
 import org.apache.lucene.analysis.*;
+import org.apache.lucene.analysis.Analyzer.TokenStreamComponents;
+import org.apache.lucene.analysis.core.LowerCaseFilter;
+import org.apache.lucene.analysis.core.StopFilter;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.standard.StandardFilter;
+import org.apache.lucene.analysis.standard.StandardTokenizer;
+import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
+import org.apache.lucene.analysis.util.WordlistLoader;
 
 import org.apache.lucene.util.Version;
 
@@ -36,7 +45,7 @@ import java.util.Set;
  * Filters {@link StandardTokenizer} with {@link StandardFilter}, {@link
  * LowerCaseFilter} and {@link StopFilter}, using a list of English stop words.
  *
- * @version $Id: KoreanAnalyzer.java,v 1.1 2012/02/08 15:00:11 smlee0818 Exp $
+ * @version $Id: KoreanAnalyzer.java,v 1.2 2013/04/07 13:09:33 smlee0818 Exp $
  */
 public class KoreanAnalyzer extends StopwordAnalyzerBase {
 	
@@ -58,12 +67,14 @@ public class KoreanAnalyzer extends StopwordAnalyzerBase {
 	  private boolean hasOrigin = true;
 	  
 	  private boolean exactMatch = false;
+	  
+	  private boolean originCNoun = true;
   
 	  public static final String DIC_ENCODING = "UTF-8";
 
 	  /** An unmodifiable set containing some common English words that are usually not
 	  useful for searching. */
-	  public static final Set<?> STOP_WORDS_SET; 
+	  public static final CharArraySet STOP_WORDS_SET; 
 	  
 
 	 static
@@ -74,14 +85,14 @@ public class KoreanAnalyzer extends StopwordAnalyzerBase {
 				"이","그","저","것","수","등","들","및","에서","그리고","그래서","또","또는"}
 		);
 		
-	    CharArraySet stopSet = new CharArraySet(Version.LUCENE_CURRENT, stopWords.size(), false);
+	    CharArraySet stopSet = new CharArraySet(Version.LUCENE_42, stopWords.size(), false);
 	 
 	    stopSet.addAll(stopWords);
 	    STOP_WORDS_SET = CharArraySet.unmodifiableSet(stopSet);
 	}
 	  
 	public KoreanAnalyzer() {
-	    this(Version.LUCENE_CURRENT, STOP_WORDS_SET);
+	    this(Version.LUCENE_42, STOP_WORDS_SET);
 	}
 
 	/**
@@ -89,7 +100,7 @@ public class KoreanAnalyzer extends StopwordAnalyzerBase {
 	 * @param search
 	 */
 	public KoreanAnalyzer(boolean exactMatch) {
-	    this(Version.LUCENE_CURRENT, STOP_WORDS_SET);	    
+	    this(Version.LUCENE_42, STOP_WORDS_SET);	    
 	    this.exactMatch = exactMatch;
 	}
 	
@@ -108,48 +119,48 @@ public class KoreanAnalyzer extends StopwordAnalyzerBase {
    * @see WordlistLoader#getWordSet(File)
    */
 	public KoreanAnalyzer(Version matchVersion, File stopwords) throws IOException {     
-        this(matchVersion, WordlistLoader.getWordSet(new InputStreamReader(new FileInputStream(stopwords), DIC_ENCODING), matchVersion));
+		this(matchVersion, loadStopwordSet(stopwords, matchVersion));        
 	}
 
   /** Builds an analyzer with the stop words from the given file.
    * @see WordlistLoader#getWordSet(File)
    */
 	public KoreanAnalyzer(Version matchVersion, File stopwords, String encoding) throws IOException {
-        this(matchVersion, WordlistLoader.getWordSet(new InputStreamReader(new FileInputStream(stopwords), encoding), matchVersion));
+		this(matchVersion, loadStopwordSet(stopwords, matchVersion));  
 	}
 		
 	/** Builds an analyzer with the stop words from the given reader.
 	 * @see WordlistLoader#getWordSet(Reader)
 	*/
 	public KoreanAnalyzer(Version matchVersion, Reader stopwords) throws IOException {
-	   this(matchVersion, WordlistLoader.getWordSet(stopwords, matchVersion));
+		this(matchVersion, loadStopwordSet(stopwords, matchVersion));  			    
 	}
 
 	/** Builds an analyzer with the stop words from the given reader.
 	 * @see WordlistLoader#getWordSet(Reader)
 	*/
-	public KoreanAnalyzer(Version matchVersion, Set<?> stopWords) {
-	    super(matchVersion, stopWords);
-	    replaceInvalidAcronym = matchVersion.onOrAfter(Version.LUCENE_24);	   
+	public KoreanAnalyzer(Version matchVersion, CharArraySet stopWords) {
+		super(matchVersion, stopWords); 
+	    replaceInvalidAcronym = matchVersion.onOrAfter(Version.LUCENE_42);	   
 	}
 	
-	@Override
-	protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-	    final KoreanTokenizer src = new KoreanTokenizer(matchVersion, reader);
-	    src.setMaxTokenLength(maxTokenLength);
-	    src.setReplaceInvalidAcronym(replaceInvalidAcronym);
-	    TokenStream tok = new KoreanFilter(src, bigrammable, hasOrigin, exactMatch);
-	    tok = new LowerCaseFilter(matchVersion, tok);
-	    tok = new StopFilter(matchVersion, tok, stopwords);
-	    return new TokenStreamComponents(src, tok) {
-	      @Override
-	      protected boolean reset(final Reader reader) throws IOException {
-	        src.setMaxTokenLength(KoreanAnalyzer.this.maxTokenLength);
-	        return super.reset(reader);
-	      }
-	    };	
-	}
 	
+   @Override
+   protected TokenStreamComponents createComponents(final String fieldName, final Reader reader) {
+     final KoreanTokenizer src = new KoreanTokenizer(matchVersion, reader);
+     src.setMaxTokenLength(maxTokenLength);
+     TokenStream tok = new KoreanFilter(src, bigrammable, hasOrigin, exactMatch, originCNoun);
+     tok = new LowerCaseFilter(matchVersion, tok);
+     tok = new StopFilter(matchVersion, tok, stopwords);
+     return new TokenStreamComponents(src, tok) {
+       @Override
+       protected void setReader(final Reader reader) throws IOException {
+         src.setMaxTokenLength(KoreanAnalyzer.this.maxTokenLength);
+         super.setReader(reader);
+       }
+     };
+   }
+	  
 	/**
 	 * determine whether the bigram index term is returned or not if a input word is failed to analysis
 	 * If true is set, the bigram index term is returned. If false is set, the bigram index term is not returned.
@@ -167,5 +178,20 @@ public class KoreanAnalyzer extends StopwordAnalyzerBase {
 		hasOrigin = has;
 	}
 
-
+	/**
+	 * determin whether the original compound noun is returned or not if a input word is analyzed morphically.
+	 * @param has
+	 */
+	public void setOriginCNoun(boolean cnoun) {
+		originCNoun = cnoun;
+	}
+	
+	/**
+	 * determin whether the original compound noun is returned or not if a input word is analyzed morphically.
+	 * @param has
+	 */
+	public void setExactMatch(boolean exact) {
+		exactMatch = exact;
+	}
+	
 }
