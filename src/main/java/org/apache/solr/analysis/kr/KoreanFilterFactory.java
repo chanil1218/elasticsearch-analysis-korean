@@ -17,13 +17,16 @@ public class KoreanFilterFactory extends TokenFilterFactory {
 	private boolean hasCNoun = true;
 	
 	private boolean exactMatch = false;
-	
+
+    public KoreanFilterFactory(Map<String, String> args) {
+        super(args);
+    }
+
 	public void init(Map<String, String> args) {
-	    super.init(args);
-	    bigrammable = getBoolean("bigrammable", true);
-	    hasOrigin = getBoolean("hasOrigin", true);
-	    exactMatch = getBoolean("exactMatch", false);
-	    hasCNoun = getBoolean("hasCNoun", true);
+	    bigrammable = getBoolean(args, "bigrammable", true);
+	    hasOrigin = getBoolean(args, "hasOrigin", true);
+	    exactMatch = getBoolean(args, "exactMatch", false);
+	    hasCNoun = getBoolean(args, "hasCNoun", true);
 	}
 	  
 	public TokenStream create(TokenStream tokenstream) {
