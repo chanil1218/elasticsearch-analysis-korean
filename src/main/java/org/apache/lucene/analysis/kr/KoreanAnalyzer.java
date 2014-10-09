@@ -85,14 +85,14 @@ public class KoreanAnalyzer extends StopwordAnalyzerBase {
 				"이","그","저","것","수","등","들","및","에서","그리고","그래서","또","또는"}
 		);
 		
-	    CharArraySet stopSet = new CharArraySet(Version.LUCENE_42, stopWords.size(), false);
+	    CharArraySet stopSet = new CharArraySet(Version.LUCENE_4_9, stopWords.size(), false);
 	 
 	    stopSet.addAll(stopWords);
 	    STOP_WORDS_SET = CharArraySet.unmodifiableSet(stopSet);
 	}
 	  
 	public KoreanAnalyzer() {
-	    this(Version.LUCENE_42, STOP_WORDS_SET);
+	    this(Version.LUCENE_4_9, STOP_WORDS_SET);
 	}
 
 	/**
@@ -100,7 +100,7 @@ public class KoreanAnalyzer extends StopwordAnalyzerBase {
 	 * @param search
 	 */
 	public KoreanAnalyzer(boolean exactMatch) {
-	    this(Version.LUCENE_42, STOP_WORDS_SET);	    
+	    this(Version.LUCENE_4_9, STOP_WORDS_SET);
 	    this.exactMatch = exactMatch;
 	}
 	
@@ -141,7 +141,7 @@ public class KoreanAnalyzer extends StopwordAnalyzerBase {
 	*/
 	public KoreanAnalyzer(Version matchVersion, CharArraySet stopWords) {
 		super(matchVersion, stopWords); 
-	    replaceInvalidAcronym = matchVersion.onOrAfter(Version.LUCENE_42);	   
+	    replaceInvalidAcronym = matchVersion.onOrAfter(Version.LUCENE_4_9);
 	}
 	
 	
