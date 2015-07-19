@@ -18,28 +18,22 @@ package org.apache.lucene.analysis.kr;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.*;
-import org.apache.lucene.analysis.Analyzer.TokenStreamComponents;
+import java.io.File;
+import java.io.IOException;
+import java.io.Reader;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
+
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
 import org.apache.lucene.analysis.core.StopFilter;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.util.WordlistLoader;
-
 import org.apache.lucene.util.Version;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
 
 /**
  * Filters {@link StandardTokenizer} with {@link StandardFilter}, {@link
@@ -85,14 +79,14 @@ public class KoreanAnalyzer extends StopwordAnalyzerBase {
 				"이","그","저","것","수","등","들","및","에서","그리고","그래서","또","또는"}
 		);
 		
-	    CharArraySet stopSet = new CharArraySet(Version.LUCENE_42, stopWords.size(), false);
+	    CharArraySet stopSet = new CharArraySet(Version.LUCENE_4_9, stopWords.size(), false);
 	 
 	    stopSet.addAll(stopWords);
 	    STOP_WORDS_SET = CharArraySet.unmodifiableSet(stopSet);
 	}
 	  
 	public KoreanAnalyzer() {
-	    this(Version.LUCENE_42, STOP_WORDS_SET);
+	    this(Version.LUCENE_4_9, STOP_WORDS_SET);
 	}
 
 	/**
@@ -100,7 +94,7 @@ public class KoreanAnalyzer extends StopwordAnalyzerBase {
 	 * @param search
 	 */
 	public KoreanAnalyzer(boolean exactMatch) {
-	    this(Version.LUCENE_42, STOP_WORDS_SET);	    
+	    this(Version.LUCENE_4_9, STOP_WORDS_SET);	    
 	    this.exactMatch = exactMatch;
 	}
 	
@@ -141,17 +135,17 @@ public class KoreanAnalyzer extends StopwordAnalyzerBase {
 	*/
 	public KoreanAnalyzer(Version matchVersion, CharArraySet stopWords) {
 		super(matchVersion, stopWords); 
-	    replaceInvalidAcronym = matchVersion.onOrAfter(Version.LUCENE_42);	   
+	    replaceInvalidAcronym = matchVersion.onOrAfter(Version.LUCENE_4_9);	   
 	}
 	
 	
    @Override
    protected TokenStreamComponents createComponents(final String fieldName, final Reader reader) {
-     final KoreanTokenizer src = new KoreanTokenizer(matchVersion, reader);
+     final KoreanTokenizer src = new KoreanTokenizer(Version.LUCENE_4_9, reader);
      src.setMaxTokenLength(maxTokenLength);
      TokenStream tok = new KoreanFilter(src, bigrammable, hasOrigin, exactMatch, originCNoun);
-     tok = new LowerCaseFilter(matchVersion, tok);
-     tok = new StopFilter(matchVersion, tok, stopwords);
+     tok = new LowerCaseFilter(Version.LUCENE_4_9, tok);
+     tok = new StopFilter(Version.LUCENE_4_9, tok, stopwords);
      return new TokenStreamComponents(src, tok) {
        @Override
        protected void setReader(final Reader reader) throws IOException {

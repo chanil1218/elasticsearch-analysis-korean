@@ -26,7 +26,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
-import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.Version;
 
 public class KoreanTokenizer extends Tokenizer {
@@ -83,15 +83,15 @@ public class KoreanTokenizer extends Tokenizer {
 		init(input, matchVersion);
 	}
 
-	/**
-	 * Creates a new StandardTokenizer with a given {@link AttributeSource}.
-	 */
-	public KoreanTokenizer(Version matchVersion, AttributeSource source,
-			Reader input) {
-		super(source.getAttributeFactory(), input);
-		this.scanner = new KoreanTokenizerImpl(input);
-		init(input, matchVersion);
-	}
+//	/**
+//	 * Creates a new StandardTokenizer with a given {@link AttributeSource}.
+//	 */
+//	public KoreanTokenizer(Version matchVersion, AttributeSource source,
+//			Reader input) {
+//		super(source.getAttributeFactory(), input);
+//		this.scanner = new KoreanTokenizerImpl(input);
+//		init(input, matchVersion);
+//	}
 
 	/**
 	 * Creates a new StandardTokenizer with a given
@@ -105,7 +105,7 @@ public class KoreanTokenizer extends Tokenizer {
 	}
 
 	private final void init(Reader input, Version matchVersion) {
-		if (matchVersion.onOrAfter(Version.LUCENE_30)) {
+		if (matchVersion.onOrAfter(Version.LUCENE_4_9)) {
 			replaceInvalidAcronym = true;
 		} else {
 			replaceInvalidAcronym = false;
@@ -162,6 +162,7 @@ public class KoreanTokenizer extends Tokenizer {
 
 	@Override
 	public void reset() throws IOException {
+		super.reset();
 		scanner.yyreset(input);
 	}
 
