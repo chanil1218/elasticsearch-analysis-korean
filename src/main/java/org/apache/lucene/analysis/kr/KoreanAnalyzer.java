@@ -54,12 +54,6 @@ public class KoreanAnalyzer extends StopwordAnalyzerBase {
 
 	  private int maxTokenLength = DEFAULT_MAX_TOKEN_LENGTH;
 
-	  /**
-	   * Specifies whether deprecated acronyms should be replaced with HOST type.
-	   * See {@linkplain "https://issues.apache.org/jira/browse/LUCENE-1068"}
-	   */
-	  private final boolean replaceInvalidAcronym;
-	  
 	  private Set stopSet;
 	  
 	  private boolean bigrammable = true;
@@ -85,14 +79,30 @@ public class KoreanAnalyzer extends StopwordAnalyzerBase {
 				"이","그","저","것","수","등","들","및","에서","그리고","그래서","또","또는"}
 		);
 		
-	    CharArraySet stopSet = new CharArraySet(Version.LUCENE_42, stopWords.size(), false);
+	    CharArraySet stopSet = new CharArraySet(stopWords.size(), false);
 	 
 	    stopSet.addAll(stopWords);
 	    STOP_WORDS_SET = CharArraySet.unmodifiableSet(stopSet);
 	}
 	  
 	public KoreanAnalyzer() {
-	    this(Version.LUCENE_42, STOP_WORDS_SET);
+	    this(STOP_WORDS_SET);
+	}
+
+	@Override
+	protected TokenStreamComponents createComponents(String s) {
+		final KoreanTokenizer src = new KoreanTokenizer();
+		src.setMaxTokenLength(maxTokenLength);
+		TokenStream tok = new KoreanFilter(src, bigrammable, hasOrigin, exactMatch, originCNoun);
+		tok = new LowerCaseFilter(tok);
+		tok = new StopFilter(tok, stopwords);
+		return new TokenStreamComponents(src, tok) {
+			@Override
+			protected void setReader(final Reader reader) throws IOException {
+				src.setMaxTokenLength(KoreanAnalyzer.this.maxTokenLength);
+				super.setReader(reader);
+			}
+		};
 	}
 
 	/**
@@ -100,67 +110,37 @@ public class KoreanAnalyzer extends StopwordAnalyzerBase {
 	 * @param search
 	 */
 	public KoreanAnalyzer(boolean exactMatch) {
-	    this(Version.LUCENE_42, STOP_WORDS_SET);	    
+	    this(STOP_WORDS_SET);
 	    this.exactMatch = exactMatch;
 	}
 	
-	public KoreanAnalyzer(Version matchVersion, String[] stopWords) throws IOException {
-	    this(matchVersion, StopFilter.makeStopSet(matchVersion, stopWords));    
+	public KoreanAnalyzer(String[] stopWords) throws IOException {
+	    this(StopFilter.makeStopSet(stopWords));
 	}
 
-  /** Builds an analyzer with the stop words from the given file.
-   * @see WordlistLoader#getWordSet(File)
-   */
-	public KoreanAnalyzer(Version matchVersion) throws IOException {     
-        this(matchVersion, STOP_WORDS_SET);        
-	}
-		
-  /** Builds an analyzer with the stop words from the given file.
-   * @see WordlistLoader#getWordSet(File)
-   */
-	public KoreanAnalyzer(Version matchVersion, File stopwords) throws IOException {     
-		this(matchVersion, loadStopwordSet(stopwords, matchVersion));        
-	}
-
-  /** Builds an analyzer with the stop words from the given file.
-   * @see WordlistLoader#getWordSet(File)
-   */
-	public KoreanAnalyzer(Version matchVersion, File stopwords, String encoding) throws IOException {
-		this(matchVersion, loadStopwordSet(stopwords, matchVersion));  
+	/**
+	 * Builds an analyzer with the stop words from the given file.
+	 *
+	 * @see WordlistLoader#getWordSet(File)
+	 */
+	public KoreanAnalyzer(File stopwords) throws IOException {
+		this(loadStopwordSet(stopwords.toPath()));
 	}
 		
 	/** Builds an analyzer with the stop words from the given reader.
 	 * @see WordlistLoader#getWordSet(Reader)
 	*/
-	public KoreanAnalyzer(Version matchVersion, Reader stopwords) throws IOException {
-		this(matchVersion, loadStopwordSet(stopwords, matchVersion));  			    
+	public KoreanAnalyzer(Reader stopwords) throws IOException {
+		this(loadStopwordSet(stopwords));
 	}
 
 	/** Builds an analyzer with the stop words from the given reader.
 	 * @see WordlistLoader#getWordSet(Reader)
 	*/
-	public KoreanAnalyzer(Version matchVersion, CharArraySet stopWords) {
-		super(matchVersion, stopWords); 
-	    replaceInvalidAcronym = matchVersion.onOrAfter(Version.LUCENE_42);	   
+	public KoreanAnalyzer(CharArraySet stopWords) {
+		super(stopWords);
 	}
-	
-	
-   @Override
-   protected TokenStreamComponents createComponents(final String fieldName, final Reader reader) {
-     final KoreanTokenizer src = new KoreanTokenizer(matchVersion, reader);
-     src.setMaxTokenLength(maxTokenLength);
-     TokenStream tok = new KoreanFilter(src, bigrammable, hasOrigin, exactMatch, originCNoun);
-     tok = new LowerCaseFilter(matchVersion, tok);
-     tok = new StopFilter(matchVersion, tok, stopwords);
-     return new TokenStreamComponents(src, tok) {
-       @Override
-       protected void setReader(final Reader reader) throws IOException {
-         src.setMaxTokenLength(KoreanAnalyzer.this.maxTokenLength);
-         super.setReader(reader);
-       }
-     };
-   }
-	  
+
 	/**
 	 * determine whether the bigram index term is returned or not if a input word is failed to analysis
 	 * If true is set, the bigram index term is returned. If false is set, the bigram index term is not returned.
