@@ -117,8 +117,7 @@ public class KoreanTokenizer extends Tokenizer {
 	public void reset() throws IOException {
         super.reset();
 
-		if (scanner == null)
-		{
+		if (scanner == null) {
 			scanner = new KoreanTokenizerImpl(input);
 		}
 
