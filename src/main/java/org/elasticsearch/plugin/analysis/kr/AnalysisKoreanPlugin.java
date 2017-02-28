@@ -1,10 +1,10 @@
 package org.elasticsearch.plugin.analysis.kr;
 
 import org.elasticsearch.index.analysis.AnalysisModule;
+import org.elasticsearch.plugins.Plugin;
 import org.elasticsearch.index.analysis.KoreanAnalysisBinderProcessor;
-import org.elasticsearch.plugins.AbstractPlugin;
 
-public class AnalysisKoreanPlugin extends AbstractPlugin {
+public class AnalysisKoreanPlugin extends Plugin {
 
     @Override
     public String name() {

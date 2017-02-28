@@ -26,13 +26,14 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
+import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.Version;
 
 public class KoreanTokenizer extends Tokenizer {
 
 	/** A private instance of the JFlex-constructed scanner */
-	private final KoreanTokenizerImpl scanner;
+	private KoreanTokenizerImpl scanner;
 
 	public static final int ALPHANUM = 0;
 	public static final int APOSTROPHE = 1;
@@ -51,8 +52,6 @@ public class KoreanTokenizer extends Tokenizer {
 			"<APOSTROPHE>", "<ACRONYM>", "<COMPANY>", "<EMAIL>", "<HOST>",
 			"<NUM>", "<CJ>", "<ACRONYM_DEP>", "<KOREAN>", "<CHINESE>" };
 
-	private boolean replaceInvalidAcronym;
-
 	private int maxTokenLength = StandardAnalyzer.DEFAULT_MAX_TOKEN_LENGTH;
 
 	/**
@@ -65,52 +64,6 @@ public class KoreanTokenizer extends Tokenizer {
 	/** @see #setMaxTokenLength */
 	public int getMaxTokenLength() {
 		return maxTokenLength;
-	}
-
-	/**
-	 * Creates a new instance of the
-	 * {@link org.apache.lucene.analysis.standard.StandardTokenizer}. Attaches
-	 * the <code>input</code> to the newly created JFlex scanner.
-	 * 
-	 * @param input
-	 *            The input reader
-	 * 
-	 *            See http://issues.apache.org/jira/browse/LUCENE-1068
-	 */
-	public KoreanTokenizer(Version matchVersion, Reader input) {
-		super(input);
-		this.scanner = new KoreanTokenizerImpl(input);
-		init(input, matchVersion);
-	}
-
-	/**
-	 * Creates a new StandardTokenizer with a given {@link AttributeSource}.
-	 */
-	public KoreanTokenizer(Version matchVersion, AttributeSource source,
-			Reader input) {
-		super(source.getAttributeFactory(), input);
-		this.scanner = new KoreanTokenizerImpl(input);
-		init(input, matchVersion);
-	}
-
-	/**
-	 * Creates a new StandardTokenizer with a given
-	 * {@link org.apache.lucene.util.AttributeSource.AttributeFactory}
-	 */
-	public KoreanTokenizer(Version matchVersion, AttributeFactory factory,
-			Reader input) {
-		super(factory, input);
-		this.scanner = new KoreanTokenizerImpl(input);
-		init(input, matchVersion);
-	}
-
-	private final void init(Reader input, Version matchVersion) {
-		if (matchVersion.onOrAfter(Version.LUCENE_30)) {
-			replaceInvalidAcronym = true;
-		} else {
-			replaceInvalidAcronym = false;
-		}
-		this.input = input;
 	}
 
 	// this tokenizer generates three attributes:
@@ -162,6 +115,12 @@ public class KoreanTokenizer extends Tokenizer {
 
 	@Override
 	public void reset() throws IOException {
+        super.reset();
+
+		if (scanner == null) {
+			scanner = new KoreanTokenizerImpl(input);
+		}
+
 		scanner.yyreset(input);
 	}
 
