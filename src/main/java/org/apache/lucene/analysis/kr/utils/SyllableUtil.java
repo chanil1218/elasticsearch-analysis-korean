@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.google.common.base.Supplier;
+import com.google.common.base.Suppliers;
 import org.apache.lucene.analysis.kr.morph.MorphException;
 
 public class SyllableUtil {
@@ -76,7 +78,17 @@ public class SyllableUtil {
 	public static int IDX_EOGAN = 39; // 어미 또는 어미의 변형으로 존재할 수 있는 음 (즉 IDX_EOMI
 										// 이거나 IDX_YNPNA 이후에 1이 있는 음절)
 
-	private static List Syllables; // 음절특성 정보
+	// 음절특성 정보
+	private static final Supplier<List<char[]>> SYLLABLES = Suppliers.memoize(new Supplier<List<char[]>>() {
+		@Override
+		public List<char[]> get() {
+			try {
+				return getSyllableFeature();
+			} catch (MorphException e) {
+				throw new RuntimeException("Failed to initialize Syllable Features.", e);
+			}
+		}
+	});
 
 	/**
 	 * 인덱스 값에 해당하는 음절의 특성을 반환한다. 영자 또는 숫자일 경우는 모두 해당이 안되므로 가장 마지막 글자인 '힣' 의
@@ -88,14 +100,12 @@ public class SyllableUtil {
 	 * @throws Exception
 	 */
 	public static char[] getFeature(int idx) throws MorphException {
+		List<char[]> syllables = SYLLABLES.get();
 
-		if (Syllables == null)
-			Syllables = getSyllableFeature();
-
-		if (idx < 0 || idx >= Syllables.size())
-			return (char[]) Syllables.get(Syllables.size() - 1);
+		if (idx < 0 || idx >= syllables.size())
+			return (char[]) syllables.get(syllables.size() - 1);
 		else
-			return (char[]) Syllables.get(idx);
+			return (char[]) syllables.get(idx);
 
 	}
 
@@ -116,28 +126,26 @@ public class SyllableUtil {
 
 	/**
 	 * 음절정보특성을 파일에서 읽는다.
-	 * 
-	 * @return
-	 * @throws Exception
 	 */
-	private static List getSyllableFeature() throws MorphException {
+	private static List<char[]> getSyllableFeature() throws MorphException {
 
 		try {
-			Syllables = new ArrayList<char[]>();
+			ArrayList<char[]> syllableFeature = new ArrayList<char[]>();
 
 			List<String> line = FileUtil.readLines(KoreanEnv.getInstance()
 					.getValue(KoreanEnv.FILE_SYLLABLE_FEATURE), KoreanEnv
 					.getInstance().getValue(KoreanEnv.ENCODING));
+
 			for (int i = 0; i < line.size(); i++) {
 				if (i != 0)
-					Syllables.add(line.get(i).toCharArray());
+					syllableFeature.add(line.get(i).toCharArray());
 			}
+
+			return syllableFeature;
+
 		} catch (IOException e) {
-			throw new MorphException(e.getMessage());
+			throw new MorphException(e.getMessage(), e);
 		}
-
-		return Syllables;
-
 	}
 
 	public static boolean isAlpanumeric(char ch) {
