@@ -18,36 +18,111 @@ package org.apache.lucene.analysis.kr.utils;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
+import com.google.common.base.Supplier;
+import com.google.common.base.Suppliers;
 import org.apache.lucene.analysis.kr.morph.CompoundEntry;
 import org.apache.lucene.analysis.kr.morph.MorphException;
 import org.apache.lucene.analysis.kr.morph.WordEntry;
 
 public class DictionaryUtil {
 	
-	private static Trie<String,WordEntry> dictionary;
+	private static Supplier<Trie<String, WordEntry>> DICTIONARY = Suppliers.memoize(new Supplier<Trie<String, WordEntry>>() {
+        @Override
+        public Trie<String, WordEntry> get() {
+            try {
+                return loadDictionary();
+            } catch (MorphException e) {
+                throw new RuntimeException("Failed to initialize DICTIONARY.", e);
+            }
+        }
+    });
 	
-	private static HashMap josas;
+	private static Supplier<Map<String, String>> JOSAS = Suppliers.memoize(new Supplier<Map<String, String>>() {
+        @Override
+        public Map<String, String> get() {
+            return readDict(KoreanEnv.FILE_JOSA);
+        }
+    });
 	
-	private static HashMap eomis;
+	private static Supplier<Map<String, String>> EOMIS = Suppliers.memoize(new Supplier<Map<String, String>>() {
+        @Override
+        public Map<String, String> get() {
+            return readDict(KoreanEnv.FILE_EOMI);
+        }
+    });
+
+    private static Supplier<Map<String, String>> PREFIXS = Suppliers.memoize(new Supplier<Map<String, String>>() {
+        @Override
+        public Map<String, String> get() {
+            return readDict(KoreanEnv.FILE_PREFIX);
+        }
+    });
+
+    private static Supplier<Map<String, String>> SUFFIXS = Suppliers.memoize(new Supplier<Map<String, String>>() {
+        @Override
+        public Map<String, String> get() {
+            return readDict(KoreanEnv.FILE_SUFFIX);
+        }
+    });
+
+	private static Supplier<Map<String, WordEntry>> UNCOMPOUNDS = Suppliers.memoize(new Supplier<Map<String, WordEntry>>() {
+        @Override
+        public Map<String, WordEntry> get() {
+            Map<String, WordEntry> uncompounds = new HashMap<String, WordEntry>();
+            List<String> lines;
+
+            try {
+                lines = FileUtil.readLines(KoreanEnv.getInstance().getValue(KoreanEnv.FILE_UNCOMPOUNDS),"UTF-8");
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to initialize UNCOMPOUNDS dictionary.", e);
+            }
+
+            for(String compound: lines) {
+                String[] infos = StringUtil.split(compound,":");
+                if(infos.length!=2) continue;
+                WordEntry entry = new WordEntry(infos[0].trim(),"90000X".toCharArray());
+                entry.setCompounds(compoundArrayToList(infos[1], StringUtil.split(infos[1],",")));
+                uncompounds.put(entry.getWord(), entry);
+            }
+
+            return Collections.unmodifiableMap(uncompounds);
+        }
+    });
 	
-	private static HashMap prefixs;
-	
-	private static HashMap suffixs;
-	
-	private static HashMap<String,WordEntry> uncompounds;
-	
-	private static HashMap<String, String> cjwords;
+	private static Supplier<Map<String, String>> CJWORDS = Suppliers.memoize(new Supplier<Map<String, String>>() {
+        @Override
+        public Map<String, String> get() {
+            Map<String, String> cjwords = new HashMap<String, String>();
+            List<String> lines;
+
+            try {
+                lines = FileUtil.readLines(KoreanEnv.getInstance().getValue(KoreanEnv.FILE_CJ), "UTF-8");
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to initialize CJWORDS dictionary.", e);
+            }
+
+            for(String cj: lines) {
+                String[] infos = StringUtil.split(cj,":");
+                if(infos.length!=2) continue;
+                cjwords.put(infos[0], infos[1]);
+            }
+
+            return Collections.unmodifiableMap(cjwords);
+        }
+    });
 	
 	/**
 	 * 사전을 로드한다.
 	 */
-	public synchronized static void loadDictionary() throws MorphException {
-		
-		dictionary = new Trie<String, WordEntry>(true);
+	public synchronized static Trie<String, WordEntry> loadDictionary() throws MorphException {
+
+        Trie<String, WordEntry> dictionary = new Trie<String, WordEntry>(true);
 		List<String> strList = null;
 		List<String> compounds = null;
 		try {
@@ -78,18 +153,16 @@ public class DictionaryUtil {
 			entry.setCompounds(compoundArrayToList(infos[1], StringUtil.split(infos[1],",")));
 			dictionary.add(entry.getWord(), entry);
 		}
+
+        return dictionary;
 	}
 	
 	public static Iterator findWithPrefix(String prefix) throws MorphException {
-		if(dictionary==null) loadDictionary();
-		return dictionary.getPrefixedBy(prefix);
+		return DICTIONARY.get().getPrefixedBy(prefix);
 	}
 
 	public static WordEntry getWord(String key) throws MorphException {		
-		if(dictionary==null) loadDictionary();
-		if(key.length()==0) return null;
-		
-		return (WordEntry)dictionary.get(key);
+		return (WordEntry) DICTIONARY.get().get(key);
 	}
 	
 	public static WordEntry getWordExceptVerb(String key) throws MorphException {		
@@ -172,82 +245,27 @@ public class DictionaryUtil {
 	}
 	
 	public static WordEntry getUncompound(String key) throws MorphException {
-		
-		try {
-			if(uncompounds==null) {
-				uncompounds = new HashMap();
-				List<String> lines = FileUtil.readLines(KoreanEnv.getInstance().getValue(KoreanEnv.FILE_UNCOMPOUNDS),"UTF-8");	
-				for(String compound: lines) {		
-					String[] infos = StringUtil.split(compound,":");
-					if(infos.length!=2) continue;
-					WordEntry entry = new WordEntry(infos[0].trim(),"90000X".toCharArray());
-					entry.setCompounds(compoundArrayToList(infos[1], StringUtil.split(infos[1],",")));
-					uncompounds.put(entry.getWord(), entry);
-				}			
-			}	
-		}catch(Exception e) {
-			throw new MorphException(e);
-		}
-		return uncompounds.get(key);
+		return UNCOMPOUNDS.get().get(key);
 	}
 	
 	public static String getCJWord(String key) throws MorphException {
-		
-		try {
-			if(cjwords==null) {
-				cjwords = new HashMap();
-				List<String> lines = FileUtil.readLines(KoreanEnv.getInstance().getValue(KoreanEnv.FILE_CJ),"UTF-8");	
-				for(String cj: lines) {		
-					String[] infos = StringUtil.split(cj,":");
-					if(infos.length!=2) continue;
-					cjwords.put(infos[0], infos[1]);
-				}			
-			}	
-		}catch(Exception e) {
-			throw new MorphException(e);
-		}
-		return cjwords.get(key);
-		
+		return CJWORDS.get().get(key);
 	}
 	
 	public static boolean existJosa(String str) throws MorphException {
-		if(josas==null) {
-			josas = new HashMap();
-			readFile(josas,KoreanEnv.FILE_JOSA);
-		}	
-		if(josas.get(str)==null) return false;
-		else return true;
+		return JOSAS.get().get(str) != null;
 	}
 	
 	public static boolean existEomi(String str)  throws MorphException {
-		if(eomis==null) {
-			eomis = new HashMap();
-			readFile(eomis,KoreanEnv.FILE_EOMI);
-		}
-
-		if(eomis.get(str)==null) return false;
-		else return true;
+        return EOMIS.get().get(str) != null;
 	}
 	
 	public static boolean existPrefix(String str)  throws MorphException {
-		if(prefixs==null) {
-			prefixs = new HashMap();
-			readFile(prefixs,KoreanEnv.FILE_PREFIX);
-		}
-
-		if(prefixs.get(str)==null) return false;
-		else return true;
+        return PREFIXS.get().get(str) != null;
 	}
 	
 	public static boolean existSuffix(String str)  throws MorphException {
-		if(suffixs==null) {
-			suffixs = new HashMap();
-			readFile(suffixs,KoreanEnv.FILE_SUFFIX);
-		}
-
-		if(suffixs.get(str)!=null) return true;
-		
-		return false;
+        return SUFFIXS.get().get(str) != null;
 	}
 	
 	/**
@@ -272,25 +290,21 @@ public class DictionaryUtil {
 		
 	}
 	
-	/**
-	 * 
-	 * @param map
-	 * @param type	1: josa, 2: eomi
-	 * @throws MorphException
-	 */
-	private static synchronized void readFile(HashMap map, String dic) throws MorphException {		
+	private static Map<String, String> readDict(String dic) {
 		
-		String path = KoreanEnv.getInstance().getValue(dic);
+		try {
+            String path = KoreanEnv.getInstance().getValue(dic);
+            HashMap<String, String> map = new HashMap<String, String>();
 
-		try{
 			List<String> line = FileUtil.readLines(path,"UTF-8");
 			for(int i=1;i<line.size();i++) {
 				map.put(line.get(i).trim(), line.get(i));
 			}
-		}catch(IOException e) {
- 		    throw new MorphException(e.getMessage(),e);
+
+            return Collections.unmodifiableMap(map);
+
 		} catch (Exception e) {
- 		    throw new MorphException(e.getMessage(),e);
+ 		    throw new RuntimeException(String.format("Failed to initialize %s dictionary ", dic), e);
 		}
 	}
 	
