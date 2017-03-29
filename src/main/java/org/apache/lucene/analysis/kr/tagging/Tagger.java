@@ -20,15 +20,15 @@ import java.util.ArrayList;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.Supplier;
 
-import com.google.common.base.Supplier;
-import com.google.common.base.Suppliers;
 import org.apache.lucene.analysis.kr.morph.AnalysisOutput;
 import org.apache.lucene.analysis.kr.morph.MorphException;
 import org.apache.lucene.analysis.kr.morph.PatternConstants;
 import org.apache.lucene.analysis.kr.utils.ConstraintUtil;
 import org.apache.lucene.analysis.kr.utils.FileUtil;
 import org.apache.lucene.analysis.kr.utils.KoreanEnv;
+import org.apache.lucene.analysis.kr.utils.Memoizer;
 import org.apache.lucene.analysis.kr.utils.StringUtil;
 import org.apache.lucene.analysis.kr.utils.Trie;
 
@@ -40,15 +40,12 @@ import org.apache.lucene.analysis.kr.utils.Trie;
  *
  */
 public class Tagger {
-		
-	private static final Supplier<Trie<String, String[]>> OCCURRENCES = Suppliers.memoize(new Supplier<Trie<String, String[]>>() {
-		@Override
-		public Trie<String, String[]> get() {
-			try {
-				return loadTaggerDic();
-			} catch (MorphException e) {
-				throw new RuntimeException("Failed to initialize OCCURRENCES trie tree.", e);
-			}
+
+	private static final Supplier<Trie<String, String[]>> OCCURRENCES = Memoizer.memoize(() -> {
+		try {
+			return loadTaggerDic();
+		} catch (MorphException e) {
+			throw new RuntimeException("Failed to initialize OCCURRENCES trie tree.", e);
 		}
 	});
 	

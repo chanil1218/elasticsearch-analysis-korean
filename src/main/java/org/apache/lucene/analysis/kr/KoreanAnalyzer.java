@@ -18,15 +18,15 @@ package org.apache.lucene.analysis.kr;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.Analyzer.TokenStreamComponents;
+import org.apache.lucene.analysis.CharArraySet;
+import org.apache.lucene.analysis.StopwordAnalyzerBase;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
 import org.apache.lucene.analysis.core.StopFilter;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
-import org.apache.lucene.analysis.util.CharArraySet;
-import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.util.WordlistLoader;
 
 import org.apache.lucene.util.Version;
@@ -68,7 +68,7 @@ public class KoreanAnalyzer extends StopwordAnalyzerBase {
 
 	  /** An unmodifiable set containing some common English words that are usually not
 	  useful for searching. */
-	  public static final CharArraySet STOP_WORDS_SET; 
+	  public static final CharArraySet STOP_WORDS_SET;
 	  
 
 	 static

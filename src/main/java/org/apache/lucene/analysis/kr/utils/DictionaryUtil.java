@@ -23,100 +23,71 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
-import com.google.common.base.Supplier;
-import com.google.common.base.Suppliers;
 import org.apache.lucene.analysis.kr.morph.CompoundEntry;
 import org.apache.lucene.analysis.kr.morph.MorphException;
 import org.apache.lucene.analysis.kr.morph.WordEntry;
 
 public class DictionaryUtil {
+
+	private static Supplier<Trie<String, WordEntry>> DICTIONARY = Memoizer.memoize(() -> {
+				try {
+					return loadDictionary();
+				} catch (MorphException e) {
+					throw new RuntimeException("Failed to initialize DICTIONARY.", e);
+				}
+			}
+	);
 	
-	private static Supplier<Trie<String, WordEntry>> DICTIONARY = Suppliers.memoize(new Supplier<Trie<String, WordEntry>>() {
-        @Override
-        public Trie<String, WordEntry> get() {
-            try {
-                return loadDictionary();
-            } catch (MorphException e) {
-                throw new RuntimeException("Failed to initialize DICTIONARY.", e);
-            }
-        }
-    });
+	private static Supplier<Map<String, String>> JOSAS = Memoizer.memoize(() -> readDict(KoreanEnv.FILE_JOSA));
 	
-	private static Supplier<Map<String, String>> JOSAS = Suppliers.memoize(new Supplier<Map<String, String>>() {
-        @Override
-        public Map<String, String> get() {
-            return readDict(KoreanEnv.FILE_JOSA);
-        }
-    });
-	
-	private static Supplier<Map<String, String>> EOMIS = Suppliers.memoize(new Supplier<Map<String, String>>() {
-        @Override
-        public Map<String, String> get() {
-            return readDict(KoreanEnv.FILE_EOMI);
-        }
-    });
+	private static Supplier<Map<String, String>> EOMIS = Memoizer.memoize(() -> readDict(KoreanEnv.FILE_EOMI));
 
-    private static Supplier<Map<String, String>> PREFIXS = Suppliers.memoize(new Supplier<Map<String, String>>() {
-        @Override
-        public Map<String, String> get() {
-            return readDict(KoreanEnv.FILE_PREFIX);
-        }
-    });
+    private static Supplier<Map<String, String>> PREFIXES = Memoizer.memoize(() -> readDict(KoreanEnv.FILE_PREFIX));
 
-    private static Supplier<Map<String, String>> SUFFIXS = Suppliers.memoize(new Supplier<Map<String, String>>() {
-        @Override
-        public Map<String, String> get() {
-            return readDict(KoreanEnv.FILE_SUFFIX);
-        }
-    });
+    private static Supplier<Map<String, String>> SUFFIXES = Memoizer.memoize(() -> readDict(KoreanEnv.FILE_SUFFIX));
 
-	private static Supplier<Map<String, WordEntry>> UNCOMPOUNDS = Suppliers.memoize(new Supplier<Map<String, WordEntry>>() {
-        @Override
-        public Map<String, WordEntry> get() {
-            Map<String, WordEntry> uncompounds = new HashMap<String, WordEntry>();
-            List<String> lines;
+	private static Supplier<Map<String, WordEntry>> UNCOMPOUNDS = Memoizer.memoize(() -> {
+		Map<String, WordEntry> uncompounds = new HashMap<>();
+		List<String> lines;
 
-            try {
-                lines = FileUtil.readLines(KoreanEnv.getInstance().getValue(KoreanEnv.FILE_UNCOMPOUNDS),"UTF-8");
-            } catch (Exception e) {
-                throw new RuntimeException("Failed to initialize UNCOMPOUNDS dictionary.", e);
-            }
+		try {
+			lines = FileUtil.readLines(KoreanEnv.getInstance().getValue(KoreanEnv.FILE_UNCOMPOUNDS), "UTF-8");
+		} catch (Exception e) {
+			throw new RuntimeException("Failed to initialize UNCOMPOUNDS dictionary.", e);
+		}
 
-            for(String compound: lines) {
-                String[] infos = StringUtil.split(compound,":");
-                if(infos.length!=2) continue;
-                WordEntry entry = new WordEntry(infos[0].trim(),"90000X".toCharArray());
-                entry.setCompounds(compoundArrayToList(infos[1], StringUtil.split(infos[1],",")));
-                uncompounds.put(entry.getWord(), entry);
-            }
+		for (String compound : lines) {
+			String[] infos = StringUtil.split(compound, ":");
+			if (infos.length != 2) continue;
+			WordEntry entry = new WordEntry(infos[0].trim(), "90000X".toCharArray());
+			entry.setCompounds(compoundArrayToList(infos[1], StringUtil.split(infos[1], ",")));
+			uncompounds.put(entry.getWord(), entry);
+		}
 
-            return Collections.unmodifiableMap(uncompounds);
-        }
-    });
-	
-	private static Supplier<Map<String, String>> CJWORDS = Suppliers.memoize(new Supplier<Map<String, String>>() {
-        @Override
-        public Map<String, String> get() {
-            Map<String, String> cjwords = new HashMap<String, String>();
-            List<String> lines;
+		return Collections.unmodifiableMap(uncompounds);
+	});
 
-            try {
-                lines = FileUtil.readLines(KoreanEnv.getInstance().getValue(KoreanEnv.FILE_CJ), "UTF-8");
-            } catch (Exception e) {
-                throw new RuntimeException("Failed to initialize CJWORDS dictionary.", e);
-            }
+	private static Supplier<Map<String, String>> CJWORDS = Memoizer.memoize(() -> {
+		Map<String, String> cjwords = new HashMap<>();
+		List<String> lines;
 
-            for(String cj: lines) {
-                String[] infos = StringUtil.split(cj,":");
-                if(infos.length!=2) continue;
-                cjwords.put(infos[0], infos[1]);
-            }
+		try {
+			lines = FileUtil.readLines(KoreanEnv.getInstance().getValue(KoreanEnv.FILE_CJ), "UTF-8");
+		} catch (Exception e) {
+			throw new RuntimeException("Failed to initialize CJWORDS dictionary.", e);
+		}
 
-            return Collections.unmodifiableMap(cjwords);
-        }
-    });
-	
+		for (String cj : lines) {
+			String[] infos = StringUtil.split(cj, ":");
+			if (infos.length != 2) continue;
+			cjwords.put(infos[0], infos[1]);
+		}
+
+		return Collections.unmodifiableMap(cjwords);
+	});
+
 	/**
 	 * 사전을 로드한다.
 	 */
@@ -261,11 +232,11 @@ public class DictionaryUtil {
 	}
 	
 	public static boolean existPrefix(String str)  throws MorphException {
-        return PREFIXS.get().get(str) != null;
+        return PREFIXES.get().get(str) != null;
 	}
 	
 	public static boolean existSuffix(String str)  throws MorphException {
-        return SUFFIXS.get().get(str) != null;
+        return SUFFIXES.get().get(str) != null;
 	}
 	
 	/**

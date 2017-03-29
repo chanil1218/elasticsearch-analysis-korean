@@ -15,7 +15,7 @@ Or you can clone this git repository, set correct version, build and just copy t
     --------------------------------------------------
     | Korean Analysis Plugin      | ElasticSearch    |
     --------------------------------------------------
-    | master                      | 2.x -> master    |
+    | master                      | 5.x -> master    |
     --------------------------------------------------
     | 1.3.0                       | 0.90.1           |
     --------------------------------------------------

@@ -20,9 +20,8 @@ package org.apache.lucene.analysis.kr.utils;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 
-import com.google.common.base.Supplier;
-import com.google.common.base.Suppliers;
 import org.apache.lucene.analysis.kr.morph.MorphException;
 
 public class SyllableUtil {
@@ -79,14 +78,11 @@ public class SyllableUtil {
 										// 이거나 IDX_YNPNA 이후에 1이 있는 음절)
 
 	// 음절특성 정보
-	private static final Supplier<List<char[]>> SYLLABLES = Suppliers.memoize(new Supplier<List<char[]>>() {
-		@Override
-		public List<char[]> get() {
-			try {
-				return getSyllableFeature();
-			} catch (MorphException e) {
-				throw new RuntimeException("Failed to initialize Syllable Features.", e);
-			}
+	private static final Supplier<List<char[]>> SYLLABLES = Memoizer.memoize(() -> {
+		try {
+			return getSyllableFeature();
+		} catch (MorphException e) {
+			throw new RuntimeException("Failed to initialize Syllable Features.", e);
 		}
 	});
 

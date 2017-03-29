@@ -4,14 +4,14 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.kr.KoreanFilter;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.index.Index;
-import org.elasticsearch.index.settings.IndexSettingsService;
+import org.elasticsearch.env.Environment;
+import org.elasticsearch.index.IndexSettings;
 
 public class KoreanFilterFactory extends AbstractTokenFilterFactory { 
 
   @Inject    
-  public KoreanFilterFactory(Index index, IndexSettingsService indexSettings, String name, Settings settings) {
-    super(index, indexSettings.indexSettings(), name, settings);
+  public KoreanFilterFactory(IndexSettings indexSettings, Environment env, String name, Settings settings) {
+    super(indexSettings, name, settings);
   }
 
   private boolean bigrammable = true;
