@@ -20,6 +20,7 @@ import java.util.ArrayList;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.Supplier;
 
 import org.apache.lucene.analysis.kr.morph.AnalysisOutput;
 import org.apache.lucene.analysis.kr.morph.MorphException;
@@ -27,6 +28,7 @@ import org.apache.lucene.analysis.kr.morph.PatternConstants;
 import org.apache.lucene.analysis.kr.utils.ConstraintUtil;
 import org.apache.lucene.analysis.kr.utils.FileUtil;
 import org.apache.lucene.analysis.kr.utils.KoreanEnv;
+import org.apache.lucene.analysis.kr.utils.Memoizer;
 import org.apache.lucene.analysis.kr.utils.StringUtil;
 import org.apache.lucene.analysis.kr.utils.Trie;
 
@@ -38,8 +40,14 @@ import org.apache.lucene.analysis.kr.utils.Trie;
  *
  */
 public class Tagger {
-		
-	private static Trie<String, String[]> occurrences;
+
+	private static final Supplier<Trie<String, String[]>> OCCURRENCES = Memoizer.memoize(() -> {
+		try {
+			return loadTaggerDic();
+		} catch (MorphException e) {
+			throw new RuntimeException("Failed to initialize OCCURRENCES trie tree.", e);
+		}
+	});
 	
 	private static final String tagDicLoc = "tagger.dic";
 	
@@ -280,15 +288,12 @@ public class Tagger {
 	}
 	
 	public static synchronized Iterator<String[]> getGR(String prefix) throws MorphException {
-
-		if(occurrences==null) loadTaggerDic();
-		
-		return occurrences.getPrefixedBy(prefix);
+		return OCCURRENCES.get().getPrefixedBy(prefix);
 	}
 	
-	private static synchronized void loadTaggerDic() throws MorphException {
+	private static synchronized Trie<String, String[]> loadTaggerDic() throws MorphException {
 		
-		occurrences = new Trie(true);
+		Trie<String, String[]> occurrences = new Trie<String, String[]>(true);
 		
 		try {
 			
@@ -308,7 +313,9 @@ public class Tagger {
 				
 				occurrences.add(syls[0]+key, patns);
 				
-			}			
+			}
+
+			return occurrences;
 			
 		} catch (Exception e) {
 			throw new MorphException("Fail to read the tagger dictionary.("+tagDicLoc+")\n"+e.getMessage());
